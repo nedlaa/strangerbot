@@ -12,15 +12,18 @@ CREATE TABLE `reports` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `users` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `chat_id` int(11) NOT NULL,
-  `last_activity` datetime NOT NULL,
-  `match_chat_id` int(11) DEFAULT NULL,
-  `available` tinyint(1) NOT NULL DEFAULT '1',
-  `register_date` datetime DEFAULT NULL,
-  `previous_match` int(11) DEFAULT NULL,
-  `allow_pictures` tinyint(1) NOT NULL,
-  `banned_until` datetime DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `chat_id` (`chat_id`)
+ `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+ `chat_id` int(11) NOT NULL,
+ `last_activity` datetime NOT NULL,
+ `match_chat_id` int(11) DEFAULT NULL,
+ `available` tinyint(1) NOT NULL DEFAULT '1',
+ `register_date` datetime DEFAULT NULL,
+ `previous_match` int(11) DEFAULT NULL,
+ `allow_pictures` tinyint(1) NOT NULL,
+ `banned_until` datetime DEFAULT NULL,
+ `gender` tinyint(4) unsigned DEFAULT '0',
+ `tags` varchar(128) DEFAULT '',
+ `match_mode` tinyint(4) unsigned DEFAULT '0',
+ PRIMARY KEY (`id`),
+ UNIQUE KEY `chat_id` (`chat_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

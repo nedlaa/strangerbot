@@ -272,14 +272,14 @@ func retrieveAllAvailableUsers() ([]User, error) {
 func retrieveAvailableUsers(c int64, mathMode int) ([]User, error) {
 	var u []User
 
-	sql := "SELECT * FROM users WHERE available = 1 AND match_chat_id IS NULL"
+	sql := "SELECT * FROM users WHERE chat_id != ? AND available = 1 AND match_chat_id IS NULL"
 	switch mathMode {
 	case 1:
 		sql = sql + " AND gender = 1"
 	case 2:
 		sql = sql + " AND gender = 2"
 	}
-	err := db.Select(&u, sql)
+	err := db.Select(&u, sql, c)
 	//err := db.Select(&u, "SELECT * FROM users WHERE chat_id != ? AND available = 1 AND match_chat_id IS NULL", c)
 	return u, err
 }
