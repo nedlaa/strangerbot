@@ -269,16 +269,24 @@ func retrieveAllAvailableUsers() ([]User, error) {
 	return u, err
 }
 
-func retrieveAvailableUsers(c int64, mathMode int) ([]User, error) {
+func retrieveAvailableUsers(c int64, user User) ([]User, error) {
 	var u []User
 
 	sql := "SELECT * FROM users WHERE chat_id != ? AND available = 1 AND match_chat_id IS NULL"
-	switch mathMode {
+
+	switch user.MatchMode {
 	case 1:
-		sql = sql + " AND gender = 1"
+		sql = sql + fmt.Sprintf(" AND gender = 1 AND (match_mode = 0 OR match_mode = %d)", user.Gender)
 	case 2:
-		sql = sql + " AND gender = 2"
+		sql = sql + fmt.Sprintf(" AND gender = 2 AND (match_mode = 0 OR match_mode = %d)", user.Gender)
+	default:
+		sql = sql + fmt.Sprintf(" AND (match_mode = 0 OR match_mode = %d)", user.Gender)
 	}
+
+	if user.Tags != "" {
+		sql = sql + ` AND tags = "` + user.Tags + `"`
+	}
+
 	err := db.Select(&u, sql, c)
 	//err := db.Select(&u, "SELECT * FROM users WHERE chat_id != ? AND available = 1 AND match_chat_id IS NULL", c)
 	return u, err
