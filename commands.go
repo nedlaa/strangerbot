@@ -5,13 +5,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Machiel/telegrambot"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 // CommandHandler supplies an interface for handling messages
-type commandHandler func(u User, m telegrambot.Message) bool
+type commandHandler func(u User, m *tgbotapi.Message) bool
 
-func commandDisablePictures(u User, m telegrambot.Message) bool {
+func commandDisablePictures(u User, m *tgbotapi.Message) bool {
 	if len(m.Text) < 7 || strings.ToLower(m.Text[0:7]) != "/nopics" {
 		return false
 	}
@@ -27,7 +27,7 @@ func commandDisablePictures(u User, m telegrambot.Message) bool {
 	return true
 }
 
-func commandStart(u User, m telegrambot.Message) bool {
+func commandStart(u User, m *tgbotapi.Message) bool {
 
 	if len(m.Text) < 6 {
 		return false
@@ -53,7 +53,7 @@ func commandStart(u User, m telegrambot.Message) bool {
 	return true
 }
 
-func commandStop(u User, m telegrambot.Message) bool {
+func commandStop(u User, m *tgbotapi.Message) bool {
 
 	if len(m.Text) < 4 {
 		return false
@@ -76,7 +76,7 @@ func commandStop(u User, m telegrambot.Message) bool {
 	return true
 }
 
-func commandReport(u User, m telegrambot.Message) bool {
+func commandReport(u User, m *tgbotapi.Message) bool {
 
 	if len(m.Text) < 7 || strings.ToLower(m.Text[0:7]) != "/report" {
 		return false
@@ -108,7 +108,7 @@ func commandReport(u User, m telegrambot.Message) bool {
 	return true
 }
 
-func commandMessage(u User, m telegrambot.Message) bool {
+func commandMessage(u User, m *tgbotapi.Message) bool {
 
 	if !u.Available {
 		return false
@@ -126,7 +126,7 @@ func commandMessage(u User, m telegrambot.Message) bool {
 		return false
 	}
 
-	if len(m.Photo) > 0 {
+	if m.Photo != nil && len(*m.Photo) > 0 {
 
 		if !partner.AllowPictures {
 			telegram.SendMessage(chatID, "User tried to send you a photo, but you disabled this,  you can enable photos by using the /nopics command", emptyOpts)
@@ -134,9 +134,9 @@ func commandMessage(u User, m telegrambot.Message) bool {
 			return true
 		}
 
-		var toSend telegrambot.PhotoSize
+		var toSend tgbotapi.PhotoSize
 
-		for _, t := range m.Photo {
+		for _, t := range *m.Photo {
 			if t.FileSize > toSend.FileSize {
 				toSend = t
 			}
@@ -145,23 +145,23 @@ func commandMessage(u User, m telegrambot.Message) bool {
 		telegram.SendMessage(chatID, "User sends you a photo!", emptyOpts)
 		_, err = telegram.SendPhoto(chatID, toSend.FileID, emptyOpts)
 
-	} else if m.Sticker != (telegrambot.Sticker{}) {
+	} else if m.Sticker != nil {
 		telegram.SendMessage(chatID, "User sends you a sticker!", emptyOpts)
 		_, err = telegram.SendSticker(chatID, m.Sticker.FileID, emptyOpts)
-	} else if m.Location != (telegrambot.Location{}) {
+	} else if m.Location != nil {
 		telegram.SendMessage(chatID, "User sends you a location!", emptyOpts)
 		_, err = telegram.SendLocation(chatID,
 			m.Location.Latitude,
 			m.Location.Longitude,
 			emptyOpts,
 		)
-	} else if m.Document != (telegrambot.Document{}) {
+	} else if m.Document != nil {
 		telegram.SendMessage(chatID, "User sends you a document!", emptyOpts)
 		_, err = telegram.SendDocument(chatID, m.Document.FileID, emptyOpts)
-	} else if m.Audio != (telegrambot.Audio{}) {
+	} else if m.Audio != nil {
 		telegram.SendMessage(chatID, "User sends you an audio file!", emptyOpts)
 		_, err = telegram.SendAudio(chatID, m.Audio.FileID, emptyOpts)
-	} else if m.Video != (telegrambot.Video{}) {
+	} else if m.Video != nil {
 		telegram.SendMessage(chatID, "User sends you a video file!", emptyOpts)
 		_, err = telegram.SendVideo(chatID, m.Video.FileID, emptyOpts)
 	} else {
@@ -176,7 +176,7 @@ func commandMessage(u User, m telegrambot.Message) bool {
 
 }
 
-func commandHelp(u User, m telegrambot.Message) bool {
+func commandHelp(u User, m *tgbotapi.Message) bool {
 
 	if len(m.Text) < 5 {
 		return false
@@ -200,6 +200,37 @@ HEAD OVER to @unichatbotchannel for rules, updates, announcements or info on how
 Sending images and videos are a beta functionality, but appear to be working fine.
 
 If you require any help, feel free to contact @aaldentnay !`, emptyOpts)
+
+	return true
+}
+
+func commandSetup(u User, m *tgbotapi.Message) bool {
+
+	if len(m.Text) < 6 {
+		return false
+	}
+
+	if strings.ToLower(m.Text[0:6]) != "/setup" {
+		return false
+	}
+
+	msg := tgbotapi.NewMessage(m.Chat.ID, `What is your gender?`)
+
+	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup([]tgbotapi.InlineKeyboardButton{
+		{
+			Text:         "Male",
+			CallbackData: &GenderMale,
+		},
+		{
+			Text:         "Female",
+			CallbackData: &GenderFemale,
+		},
+	})
+
+	_, err := telegramBot.Send(msg)
+	if err != nil {
+		log.Println(err.Error())
+	}
 
 	return true
 }

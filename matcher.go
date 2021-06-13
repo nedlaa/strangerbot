@@ -18,7 +18,7 @@ func matchUsers(chatIDs <-chan int64) {
 			continue
 		}
 
-		availableUsers, err := retrieveAvailableUsers(c)
+		availableUsers, err := retrieveAvailableUsers(c, user.MatchMode)
 
 		if err != nil {
 			log.Printf("Error retrieving available users: %s", err)

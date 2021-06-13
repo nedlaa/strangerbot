@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/Machiel/telegrambot"
@@ -20,6 +21,7 @@ import (
 
 var (
 	telegram        telegrambot.TelegramBot
+	telegramBot     *tgbotapi.BotAPI
 	db              *sqlx.DB
 	emptyOpts       = telegrambot.SendMessageOptions{}
 	commandHandlers = []commandHandler{
@@ -28,10 +30,11 @@ var (
 		commandStart,
 		commandStop,
 		commandReport,
+		commandSetup,
 		commandMessage,
 	}
 	startJobs            = make(chan int64, 10000)
-	messageQueue         = make(chan telegrambot.Message, 10000)
+	updatesQueue         = make(chan *tgbotapi.Update, 10000)
 	endConversationQueue = make(chan EndConversationEvent, 10000)
 	stopped              = false
 )
@@ -57,6 +60,10 @@ func main() {
 	}
 
 	telegram = telegrambot.New(telegramBotKey)
+	telegramBot, err = tgbotapi.NewBotAPI(telegramBotKey)
+	if err != nil {
+		panic(err)
+	}
 
 	var wg sync.WaitGroup
 
@@ -79,11 +86,11 @@ func main() {
 	var workerWg sync.WaitGroup
 	for i := 0; i < 3; i++ {
 		workerWg.Add(1)
-		go func(queue <-chan telegrambot.Message) {
+		go func(queue <-chan *tgbotapi.Update) {
 			defer workerWg.Done()
 			log.Println("Started a message worker...")
-			messageWorker(queue)
-		}(messageQueue)
+			updateWorker(queue)
+		}(updatesQueue)
 	}
 
 	for x := 0; x < 1; x++ {
@@ -102,7 +109,7 @@ func main() {
 		defer receiverWg.Done()
 		log.Println("Started update worker")
 
-		var offset int64
+		var offset int
 
 		for {
 			log.Println("Requesting updates")
@@ -134,7 +141,7 @@ func main() {
 
 	receiverWg.Wait()
 
-	close(messageQueue)
+	close(updatesQueue)
 
 	workerWg.Wait()
 
@@ -178,6 +185,9 @@ type User struct {
 	PreviousMatch sql.NullInt64 `db:"previous_match"`
 	AllowPictures bool          `db:"allow_pictures"`
 	BannedUntil   NullTime      `db:"banned_until"`
+	Gender        int           `db:"gender"`
+	Tags          string        `db:"tags"`
+	MatchMode     int           `db:"match_mode"`
 }
 
 func retrieveUser(chatID int64) (User, error) {
@@ -232,15 +242,45 @@ func updateLastActivity(id int64) {
 	db.Exec("UPDATE users SET last_activity = ? WHERE id = ?", time.Now(), id)
 }
 
+func updateGender(id int64, gender int) {
+	_, err := db.Exec("UPDATE users SET gender = ? WHERE id = ?", gender, id)
+	if err != nil {
+		log.Println("update gender info error", err.Error())
+	}
+}
+
+func updateMathMode(id int64, mathMode int) {
+	_, err := db.Exec("UPDATE users SET match_mode = ? WHERE id = ?", mathMode, id)
+	if err != nil {
+		log.Println("update match mode error", err.Error())
+	}
+}
+
+func updateTags(id int64, tags string) {
+	_, err := db.Exec("UPDATE users SET tags = ? WHERE id = ?", tags, id)
+	if err != nil {
+		log.Println("update tags error", err.Error())
+	}
+}
+
 func retrieveAllAvailableUsers() ([]User, error) {
 	var u []User
 	err := db.Select(&u, "SELECT * FROM users WHERE available = 1 AND match_chat_id IS NULL")
 	return u, err
 }
 
-func retrieveAvailableUsers(c int64) ([]User, error) {
+func retrieveAvailableUsers(c int64, mathMode int) ([]User, error) {
 	var u []User
-	err := db.Select(&u, "SELECT * FROM users WHERE chat_id != ? AND available = 1 AND match_chat_id IS NULL", c)
+
+	sql := "SELECT * FROM users WHERE available = 1 AND match_chat_id IS NULL"
+	switch mathMode {
+	case 1:
+		sql = sql + " AND gender = 1"
+	case 2:
+		sql = sql + " AND gender = 2"
+	}
+	err := db.Select(&u, sql)
+	//err := db.Select(&u, "SELECT * FROM users WHERE chat_id != ? AND available = 1 AND match_chat_id IS NULL", c)
 	return u, err
 }
 
@@ -251,7 +291,7 @@ func shuffle(a []User) {
 	}
 }
 
-func handleMessage(message telegrambot.Message) {
+func handleMessage(message *tgbotapi.Message) {
 
 	u, err := retrieveOrCreateUser(message.Chat.ID)
 
@@ -269,11 +309,10 @@ func handleMessage(message telegrambot.Message) {
 
 	sendToHandler(u, message)
 
-	// @TODO: Add this to a worker as well
 	updateLastActivity(u.ID)
 }
 
-func sendToHandler(u User, message telegrambot.Message) {
+func sendToHandler(u User, message *tgbotapi.Message) {
 	for _, handler := range commandHandlers {
 		res := handler(u, message)
 
@@ -283,10 +322,15 @@ func sendToHandler(u User, message telegrambot.Message) {
 	}
 }
 
-func processUpdates(offset int64) int64 {
+func processUpdates(offset int) int {
 
 	log.Printf("Fetching with offset %d", offset)
-	updates, err := telegram.GetUpdates(offset, 20)
+
+	updates, err := telegramBot.GetUpdates(tgbotapi.UpdateConfig{
+		Offset:  offset,
+		Limit:   100,
+		Timeout: 20,
+	})
 
 	if err != nil {
 		log.Println(err)
@@ -296,23 +340,34 @@ func processUpdates(offset int64) int64 {
 
 }
 
-func messageWorker(messages <-chan telegrambot.Message) {
-	for message := range messages {
-		handleMessage(message)
+func handleUpdate(update *tgbotapi.Update) {
+
+	if update.Message != nil {
+		handleMessage(update.Message)
+	} else if update.CallbackQuery != nil {
+		handleCallbackQuery(update.CallbackQuery)
 	}
 }
 
-func handleUpdates(updates telegrambot.Update, offset int64) int64 {
-	for _, update := range updates.Result {
+func updateWorker(updates <-chan *tgbotapi.Update) {
+	for update := range updates {
+		handleUpdate(update)
+	}
+}
 
-		if update.ID >= offset {
-			if update.ID%1000 == 0 {
-				log.Printf("Update ID: %d", update.ID)
+func handleUpdates(updates []tgbotapi.Update, offset int) int {
+
+	for _, update := range updates {
+
+		if update.UpdateID >= offset {
+			if update.UpdateID%1000 == 0 {
+				log.Printf("Update ID: %d", update.UpdateID)
 			}
-			offset = (update.ID + 1)
+			offset = (update.UpdateID + 1)
 		}
 
-		messageQueue <- update.Message
+		updatesQueue <- &update
 	}
+
 	return offset
 }
