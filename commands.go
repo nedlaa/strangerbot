@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -42,6 +43,12 @@ func commandStart(u User, m *tgbotapi.Message) bool {
 	}
 
 	if u.MatchChatID.Valid {
+		return false
+	}
+
+	if !u.IsProfileFinish() {
+		//telegram.SendMessage(u.ChatID, fmt.Sprintf("please /setup configure your profile: %s", u.GetNeedFinishProfile()), emptyOpts)
+		telegram.SendMessage(u.ChatID, fmt.Sprintf("please /setup configure your profile"), emptyOpts)
 		return false
 	}
 

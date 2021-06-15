@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -190,6 +191,30 @@ type User struct {
 	MatchMode     int           `db:"match_mode"`
 }
 
+func (u User) IsProfileFinish() bool {
+	if u.Gender == 0 || u.MatchMode < 0 || u.Tags == "" {
+		return false
+	}
+	return true
+}
+
+func (u User) GetNeedFinishProfile() string {
+
+	field := make([]string, 0, 3)
+
+	if u.Gender == 0 {
+		field = append(field, "Gender")
+	}
+	if u.MatchMode < 0 {
+		field = append(field, "Gender Preference")
+	}
+	if u.Tags == "" {
+		field = append(field, "Goal")
+	}
+
+	return strings.Join(field, ",")
+}
+
 func retrieveUser(chatID int64) (User, error) {
 	var u User
 	err := db.Get(&u, "SELECT * FROM users WHERE chat_id = ?", chatID)
@@ -217,6 +242,10 @@ func retrieveOrCreateUser(chatID int64) (User, error) {
 		To get started enter:
 
 		/start
+
+		To configure your profile:
+
+		/setup
 
 		If you feel like ending the conversation, type:
 
@@ -272,7 +301,7 @@ func retrieveAllAvailableUsers() ([]User, error) {
 func retrieveAvailableUsers(c int64, user User) ([]User, error) {
 	var u []User
 
-	sql := "SELECT * FROM users WHERE chat_id != ? AND available = 1 AND match_chat_id IS NULL"
+	sql := `SELECT * FROM users WHERE (gender > 0 AND tags!="" AND match_mode > -1) AND chat_id != ? AND available = 1 AND match_chat_id IS NULL`
 
 	switch user.MatchMode {
 	case 1:
