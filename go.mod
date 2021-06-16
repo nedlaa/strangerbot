@@ -1,4 +1,4 @@
-module strangerbot
+module github.com/zplzpl/strangerbot
 
 go 1.16
 
