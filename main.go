@@ -237,29 +237,37 @@ func retrieveOrCreateUser(chatID int64) (User, error) {
 			return u, err
 		}
 
-		telegram.SendMessage(chatID, `Welcome! This bot was started in light of COVID-19 restrictions which meant less opportunities for interaction in university! Whether you're here just to know your cohort mates, find a study buddy, make new friends or have a listening ear, this is the chat bot for you. While conversations are anonymous, you're more than welcome to exchange contacts after a quick chat (do stay safe though)!
-
-		To get started enter:
-
-		/start
+		telegram.SendMessage(chatID, `Welcome! This bot provides opportunities for interaction with your fellow Singaporeans! Especially in light of Covid-19 restrictions, perhaps such opportunities have reduced—and in some cases, have taken a toll on mental health. Whether you are here for a listening ear, to make a friend, somehow find a partner, or just have a quick wholesome chat, @sgchatterbot is for you. While conversations are anonymous, you're more than welcome to exchange contacts after a quick chat (do stay safe though)! Note that you're not 100% anonymous—if you break any rules or do anything illegal (especially noting there may be minors on here)—it will result in a permanent ban across all bots and a police report against you. This includes, but is not limited to impersonation, harassment, grooming, or sending of explicit images. If a user prefers to stay anonymous, this should be respected. Advertising or spam is not allowed as well.
 
 		To configure your profile:
 
 		/setup
 
+		Then to start a conversation, enter
+
+		/start
+
 		If you feel like ending the conversation, type:
 
-		/bye
+		/end
 
-		If you want another chat partner, type /start again after typing /bye!
-		
-		Enter /report (followed by reason) to report abuse; note that this users who abuse the platform will be banned permanently. Note that advertising is also not allowed!
+		If you want another chat partner, type /start again after typing /end!
+
+		Enter /report (followed by reason) into the chat immediately to report abuse; if you are unable to do so because chat has ended, DO NOT start a new chat—immediately contact @aaldentnay . Note that users who abuse the platform will be banned permanently.
+
+		E.g.
+		/report creep
+		(do not leave the reason blank! It must contain a reason for the report to send.)
+
 		Enter /nopics to prevent others from sending pics to you!
-		
-		HEAD TO @unichatbotchannel for rules, announcements, etc. first before proceeding! :)
-		
+
+		HEAD TO @singaporebotchannel for rules, announcements, etc. first before proceeding! Subscribe to this! :)
+
 		Feel free to contact @aaldentnay if you need any assistance!
 		Note that information of anyone who breaches rules will be tracked. Anything illegal will be reported to the police. Be careful with your personal information.
+
+		The "friends/wholesome talk" segment should be strictly only for that; anyone "thirsty" should probably stick within the "tinder" option (even then, if you do anything out of line, you will still be banned/reported to authorities)
+
 
 		Have fun!`, emptyOpts)
 	}
