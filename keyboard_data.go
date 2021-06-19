@@ -26,10 +26,10 @@ const (
 
 	GoalOptionDating          = 1
 	GoalOptionDatingText      = "Dating/“Tinder”"
-	GoalOptionDatingNoteText  = " (Note that sending anything offensive/inappropriate can result in permanent ban; if anything illegal, such as sending explicit images, occurs, your identity will be retrieved with data handed over to the police)"
+	GoalOptionDatingNoteText  = " (Note that sending anything offensive/inappropriate can result in permanent ban; if anything illegal, such as sending of unwanted explicit images, occurs, your identity will be retrieved with data handed over to the police. Whatever is illegal in Singapore is still illegal here). Enter /start to begin. :D"
 	GoalOptionFriends         = 2
 	GoalOptionFriendsText     = "Friends/Wholesome Talk Only"
-	GoalOptionFriendsNoteText = " (NOTE: anything rude/containing sexual, or any form of abuse results in permanent ban—your identity will be retrieved and handed to the police if anything illegal, including sending of explicit images, occurs)"
+	GoalOptionFriendsNoteText = " (NOTE: Being 'thirsty' is STRICTLY not allowed here (pls respect this). Anything rude/any way sexual, or any form of abuse results in permanent ban—your identity will be retrieved and handed to the police if anything illegal, including sending of explicit images, impersonation, grooming or harassment occurs). Enter /start to begin. :D"
 )
 
 var (
