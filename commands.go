@@ -225,11 +225,11 @@ func commandSetup(u User, m *tgbotapi.Message) bool {
 
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup([]tgbotapi.InlineKeyboardButton{
 		{
-			Text:         "Male",
+			Text:         GenderOptionMaleText + GenderOptionMaleNoteText,
 			CallbackData: &GenderMale,
 		},
 		{
-			Text:         "Female",
+			Text:         GenderOptionFemaleText + GenderOptionFemaleNoteText,
 			CallbackData: &GenderFemale,
 		},
 	})

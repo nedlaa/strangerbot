@@ -39,7 +39,7 @@ func handleCallbackQuery(callbackQuery *tgbotapi.CallbackQuery) {
 		}
 
 		{
-			msg := tgbotapi.NewMessage(callbackQuery.Message.Chat.ID, fmt.Sprintf("You selected %s as your Gender", obj.GetOptionText()))
+			msg := tgbotapi.NewMessage(callbackQuery.Message.Chat.ID, fmt.Sprintf("You selected %s as your Gender. %s", obj.GetOptionText(), obj.GetOptionNoteText()))
 			telegramBot.Send(msg)
 		}
 
@@ -48,15 +48,15 @@ func handleCallbackQuery(callbackQuery *tgbotapi.CallbackQuery) {
 
 			msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup([]tgbotapi.InlineKeyboardButton{
 				{
-					Text:         MatchModeOptionMaleText,
+					Text:         MatchModeOptionMaleText + MatchModeOptionMaleNoteText,
 					CallbackData: &MatchModeMale,
 				},
 				{
-					Text:         MatchModeOptionFemaleText,
+					Text:         MatchModeOptionFemaleText + MatchModeOptionFemaleNoteText,
 					CallbackData: &MatchModeFemale,
 				},
 				{
-					Text:         MatchModeOptionAnythingText,
+					Text:         MatchModeOptionAnythingText + MatchModeOptionAnythingNoteText,
 					CallbackData: &MatchModeAnything,
 				},
 			})
@@ -79,7 +79,7 @@ func handleCallbackQuery(callbackQuery *tgbotapi.CallbackQuery) {
 		}
 
 		{
-			msg := tgbotapi.NewMessage(callbackQuery.Message.Chat.ID, fmt.Sprintf("You selected %s as your Match", obj.GetOptionText()))
+			msg := tgbotapi.NewMessage(callbackQuery.Message.Chat.ID, fmt.Sprintf("You selected %s as your Match. %s", obj.GetOptionText(), obj.GetOptionNoteText()))
 			telegramBot.Send(msg)
 		}
 
@@ -88,11 +88,11 @@ func handleCallbackQuery(callbackQuery *tgbotapi.CallbackQuery) {
 
 			msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup([]tgbotapi.InlineKeyboardButton{
 				{
-					Text:         GoalOptionDatingText,
+					Text:         GoalOptionDatingText + GoalOptionDatingNoteText,
 					CallbackData: &GoalDating,
 				},
 				{
-					Text:         GoalOptionFriendsText,
+					Text:         GoalOptionFriendsText + GoalOptionFriendsNoteText,
 					CallbackData: &GoalFriends,
 				},
 			})
@@ -105,7 +105,7 @@ func handleCallbackQuery(callbackQuery *tgbotapi.CallbackQuery) {
 
 	case GoalOptionType:
 
-		// update gender
+		// update tags
 		updateTags(u.ID, obj.GetOptionText())
 
 		// handle message
@@ -115,7 +115,7 @@ func handleCallbackQuery(callbackQuery *tgbotapi.CallbackQuery) {
 		}
 
 		{
-			msg := tgbotapi.NewMessage(callbackQuery.Message.Chat.ID, fmt.Sprintf("You selected %s as your Goal", obj.GetOptionText()))
+			msg := tgbotapi.NewMessage(callbackQuery.Message.Chat.ID, fmt.Sprintf("You selected %s as your Goal. %s", obj.GetOptionText(), obj.GetOptionNoteText()))
 			telegramBot.Send(msg)
 		}
 
