@@ -37,6 +37,8 @@ var (
 	startJobs            = make(chan int64, 10000)
 	updatesQueue         = make(chan *tgbotapi.Update, 10000)
 	endConversationQueue = make(chan EndConversationEvent, 10000)
+	updateMap            = NewIdRecorder()
+	messageMap           = NewIdRecorder()
 	stopped              = false
 )
 
@@ -238,37 +240,22 @@ func retrieveOrCreateUser(chatID int64) (User, error) {
 		}
 
 		telegram.SendMessage(chatID, `Welcome! This bot provides opportunities for interaction with your fellow Singaporeans! Especially in light of Covid-19 restrictions, perhaps such opportunities have reduced—and in some cases, have taken a toll on mental health. Whether you are here for a listening ear, to make a friend, somehow find a partner, find a lunch buddy or just have a quick wholesome chat, @sgchatterbot is for you. While conversations are anonymous, you're more than welcome to exchange contacts after a quick chat (do stay safe though)! Note that you're not 100% anonymous—if you break any rules or do anything illegal (especially noting there may be minors on here)—it will result in a permanent ban across all bots and a police report against you. This includes, but is not limited to impersonation, harassment, grooming, or sending of explicit images. If a user prefers to stay anonymous, this should be respected. Advertising or spam is not allowed as well.
-
 		To configure your profile:
-
 		/setup
-
 		Then to start a conversation, enter
-
 		/start
-
 		If you feel like ending the conversation, type:
-
 		/end
-
 		If you want another chat partner, type /start again after typing /end!
-
 		Enter /report (followed by reason) into the chat immediately to report abuse; if you are unable to do so because chat has ended, DO NOT start a new chat—immediately contact @aaldentnay . Note that users who abuse the platform will be banned permanently.
-
 		E.g.
 		/report creep
 		(do not leave the reason blank! It must contain a reason for the report to send.)
-
 		Enter /nopics to prevent others from sending pics to you!
-
 		HEAD TO @singaporebotchannel for rules, announcements, etc. first before proceeding! Subscribe to this! :)
-
 		Feel free to contact @aaldentnay if you need any assistance!
 		Note that information of anyone who breaches rules will be tracked. Anything illegal will be reported to the police. Be careful with your personal information.
-
 		The "friends/wholesome talk" segment should be strictly only for that; anyone "thirsty" should probably stick within the "tinder" option (even then, if you do anything out of line, you will still be banned/reported to authorities)
-
-
 		Have fun!`, emptyOpts)
 	}
 
@@ -341,30 +328,37 @@ func handleMessage(message *tgbotapi.Message) {
 	u, err := retrieveOrCreateUser(message.Chat.ID)
 
 	if err != nil {
-		log.Println(err)
+		log.Printf("retrieveOrCreateUser err: %s", err.Error())
 		return
 	}
 
 	if u.BannedUntil.Valid && time.Now().Before(u.BannedUntil.Time) {
 		date := u.BannedUntil.Time.Format("02 January 2006")
 		response := fmt.Sprintf("You are banned until %s", date)
-		telegram.SendMessage(message.Chat.ID, response, emptyOpts)
-		return
+		_, err := telegram.SendMessage(message.Chat.ID, response, emptyOpts)
+		if err != nil {
+			log.Printf("handleMessage telegram.SendMessage err: %s", err.Error())
+			return
+		}
 	}
 
 	sendToHandler(u, message)
 
 	updateLastActivity(u.ID)
+
 }
 
 func sendToHandler(u User, message *tgbotapi.Message) {
-	for _, handler := range commandHandlers {
-		res := handler(u, message)
 
+	for _, handler := range commandHandlers {
+
+		res := handler(u, message)
 		if res {
 			return
 		}
+
 	}
+
 }
 
 func processUpdates(offset int) int {
@@ -378,7 +372,8 @@ func processUpdates(offset int) int {
 	})
 
 	if err != nil {
-		log.Println(err)
+		log.Printf("GetUpdates err: %s", err.Error())
+		return offset
 	}
 
 	return handleUpdates(updates, offset)
@@ -388,15 +383,35 @@ func processUpdates(offset int) int {
 func handleUpdate(update *tgbotapi.Update) {
 
 	if update.Message != nil {
-		handleMessage(update.Message)
+
+		if !messageMap.IsSent(update.Message.MessageID) {
+			if messageMap.SetSent(update.Message.MessageID) {
+				handleMessage(update.Message)
+			} else {
+				log.Printf("message id:%d is handled", update.Message.MessageID)
+			}
+
+		} else {
+			log.Printf("message id:%d is handled", update.Message.MessageID)
+		}
+
 	} else if update.CallbackQuery != nil {
 		handleCallbackQuery(update.CallbackQuery)
 	}
+
 }
 
 func updateWorker(updates <-chan *tgbotapi.Update) {
 	for update := range updates {
-		handleUpdate(update)
+		if !updateMap.IsSent(update.UpdateID) {
+			if updateMap.SetSent(update.UpdateID) {
+				handleUpdate(update)
+			} else {
+				log.Printf("update id:%d is handled", update.UpdateID)
+			}
+		} else {
+			log.Printf("update id:%d is handled", update.UpdateID)
+		}
 	}
 }
 
