@@ -419,15 +419,14 @@ func handleUpdates(updates []tgbotapi.Update, offset int) int {
 
 	for _, update := range updates {
 
-		if update.UpdateID >= offset {
+		if update.UpdateID > offset {
 			if update.UpdateID%1000 == 0 {
 				log.Printf("Update ID: %d", update.UpdateID)
 			}
-			offset = (update.UpdateID + 1)
+			offset = update.UpdateID
 		}
 
 		updatesQueue <- &update
 	}
-
 	return offset
 }
