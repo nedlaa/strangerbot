@@ -112,13 +112,13 @@ func main() {
 		defer receiverWg.Done()
 		log.Println("Started update worker")
 
-		var offset int
+			var offset int
 
 		for {
-			log.Println("Requesting updates")
+			//log.Println("Requesting updates")
 			offset = processUpdates(offset)
-			log.Println("Request completed")
-			time.Sleep(500 * time.Millisecond)
+			//log.Println("Request completed")
+			time.Sleep(1 * time.Second)
 
 			if stopped {
 				break
@@ -350,6 +350,8 @@ func handleMessage(message *tgbotapi.Message) {
 
 func sendToHandler(u User, message *tgbotapi.Message) {
 
+	log.Printf("msg_id: %d sendToHandler", message.MessageID)
+
 	for _, handler := range commandHandlers {
 
 		res := handler(u, message)
@@ -402,7 +404,11 @@ func handleUpdate(update *tgbotapi.Update) {
 }
 
 func updateWorker(updates <-chan *tgbotapi.Update) {
+
 	for update := range updates {
+
+		log.Printf("msg_id: %d updateWorker", update.Message.MessageID)
+
 		if !updateMap.IsSent(update.UpdateID) {
 			if updateMap.SetSent(update.UpdateID) {
 				handleUpdate(update)
@@ -417,16 +423,19 @@ func updateWorker(updates <-chan *tgbotapi.Update) {
 
 func handleUpdates(updates []tgbotapi.Update, offset int) int {
 
-	for _, update := range updates {
+	for i, update := range updates {
 
-		if update.UpdateID > offset {
+		log.Printf("offset: %d msg_id: %d msg_text: %s", update.UpdateID, update.Message.MessageID, update.Message.Text)
+
+		if update.UpdateID >= offset {
 			if update.UpdateID%1000 == 0 {
 				log.Printf("Update ID: %d", update.UpdateID)
 			}
-			offset = update.UpdateID
+			offset = update.UpdateID + 1
 		}
 
-		updatesQueue <- &update
+		updatesQueue <- &updates[i]
 	}
+
 	return offset
 }
