@@ -407,7 +407,6 @@ func updateWorker(updates <-chan *tgbotapi.Update) {
 
 	for update := range updates {
 
-		log.Printf("msg_id: %d updateWorker", update.Message.MessageID)
 
 		if !updateMap.IsSent(update.UpdateID) {
 			if updateMap.SetSent(update.UpdateID) {
